@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>بلاك بير للطباعة ثلاثية الأبعاد</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="بلاك بير: طباعة ثلاثية الأبعاد في دولة قطر للدروع التذكارية والهدايا المخصّصة والشعارات البارزة والنماذج الأولية وقطع الغيار.">
+<meta name="theme-color" content="#F9F6F0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Reem+Kufi:wght@500;600;700&display=swap">
+<style>
+/* Layout concept: مجسّم دبّ ثلاثي الأبعاد واحد يعيش في الخلفية ويعبر الأقسام مع التمرير:
+   يظهر كاملاً ← يتفكّك إلى أجزائه ← يتقطّع إلى طبقات ← تطبعه الفوهة طبقةً طبقة ← يستقرّ على قاعدة.
+   هوية فاتحة ثابتة (ورق + عنابي) مع "غرفة طباعة" داكنة في المنتصف، عن قصد. */
+:root{
+  --paper:#F9F6F0;
+  --paper-2:#F1EAE1;
+  --ink:#2B1015;
+  --ink-soft:#5C4649;
+  --wine:#701C28;
+  --wine-deep:#4A101A;
+  --wine-lite:#8A2D3A;
+  --room:#160A0D;
+  --hot:#FF8A3D;
+  --line:rgba(43,16,21,.16);
+  --on-wine:#F9F6F0;
+  --bgcur:#F9F6F0;
+  --f-display:"Reem Kufi","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Segoe UI",Tahoma,system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --nav-h:64px;
+  --inset-top:env(safe-area-inset-top,0px);
+  --gut-l:max(16px,env(safe-area-inset-left,0px));
+  --gut-r:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.75;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:var(--inset-top);background:var(--bgcur);z-index:60}
+#app{direction:rtl;text-align:right}
+a{color:inherit}
+img{display:block;max-width:100%;height:auto}
+:focus-visible{outline:3px solid var(--wine);outline-offset:3px;border-radius:4px}
+.wrap{width:100%;max-width:1240px;margin-inline:auto;padding-left:var(--gut-l);padding-right:var(--gut-r)}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.2;margin:0;text-wrap:balance}
+p{margin:0}
+.stripe{color:transparent;background:repeating-linear-gradient(to bottom,var(--wine) 0 4px,var(--wine-lite) 4px 5px);-webkit-background-clip:text;background-clip:text}
+.dark .stripe{background:repeating-linear-gradient(to bottom,var(--hot) 0 4px,#C9612A 4px 5px);-webkit-background-clip:text;background-clip:text}
+.mono{font-family:var(--f-mono);direction:ltr;unicode-bidi:isolate}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;font:600 1rem/1 var(--f-body);padding:1rem 1.6rem;border-radius:999px;text-decoration:none;border:2px solid var(--wine);background:var(--wine);color:var(--on-wine);cursor:pointer;transition:transform .25s,background .25s,box-shadow .25s;min-height:52px}
+.btn svg{width:20px;height:20px;flex:none}
+.btn:hover{background:var(--wine-deep);border-color:var(--wine-deep);transform:translateY(-2px);box-shadow:0 12px 26px -12px rgba(74,16,26,.6)}
+.btn.sm{padding:.65rem 1.1rem;min-height:42px;font-size:.92rem}
+.btn.ghost{background:transparent;color:var(--wine)}
+.btn.ghost:hover{background:var(--wine);color:var(--on-wine)}
+
+/* nav */
+.nav{position:fixed;top:var(--inset-top);inset-inline:0;z-index:50;height:var(--nav-h);transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
+.nav.solid{background:rgba(249,246,240,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:var(--line)}
+.nav .wrap{height:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.nav .logo{height:36px;width:auto}
+.nav .prog{position:absolute;inset-inline:0;bottom:-1px;height:2px;background:transparent}
+.nav .prog i{display:block;height:100%;width:0;background:var(--wine);margin-inline-start:auto}
+
+/* intro */
+#intro{position:fixed;inset:0;z-index:100;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;transition:opacity .7s ease,visibility .7s}
+#intro.out{opacity:0;visibility:hidden}
+#intro img{height:58px;width:auto}
+#intro .mono{font-size:.72rem;letter-spacing:.2em;color:var(--wine)}
+
+/* the 3D stage */
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;display:block}
+
+/* scroll chapters */
+.st{position:relative;z-index:4}
+.st .pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;padding-top:var(--nav-h)}
+.st .pin>.wrap{display:flex}
+.say{max-width:min(520px,44vw);display:flex;flex-direction:column;gap:1.1rem}
+.say .k{font-family:var(--f-mono);font-size:.76rem;letter-spacing:.2em;color:var(--wine);direction:ltr;text-align:right}
+.say h1{font-size:clamp(2.4rem,5vw,4.9rem);line-height:1.18}
+.say h2{font-size:clamp(2.1rem,4.4vw,4.2rem);line-height:1.22}
+.say p{font-size:clamp(1.02rem,1.35vw,1.18rem);color:var(--ink-soft);max-width:27rem}
+.say .actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.4rem}
+.ln{display:block;overflow:hidden;padding-block:.06em}
+.ln>span{display:inline-block;transition:transform .9s cubic-bezier(.16,.84,.24,1)}
+.ln+.ln>span{transition-delay:.08s}
+.js .st:not(.on) .ln>span{transform:translateY(110%)}
+.say .fade{transition:opacity .7s .2s,transform .7s .2s}
+.js .st:not(.on) .say .fade{opacity:0;transform:translateY(14px)}
+.dark .say h2,.dark .say h1{color:var(--paper)}
+.dark .say p{color:rgba(249,246,240,.72)}
+.dark .say .k{color:var(--hot)}
+
+/* chapter heights: كل فصل مثبّت لفترة ثم ينزلق للتالي */
+#c0{height:150svh}
+#c2{height:270svh}
+#c3{height:320svh}
+#c4{height:190svh}
+
+/* HUD: قراءات الطابعة */
+.hud{margin-top:.8rem;display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:.4rem 1.6rem;font-family:var(--f-mono);direction:ltr;text-align:left;font-size:.72rem;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.hud div{display:flex;flex-direction:column;gap:2px}
+.hud small{font-size:.62rem;opacity:.6}
+.hud b{font-weight:500;font-size:1.15rem;letter-spacing:.04em}
+#c2 .hud{color:var(--wine)}
+#c3 .hud{color:var(--paper)}
+#c3 .hud b.hot{color:var(--hot)}
+.bar{grid-column:1/-1;height:3px;background:rgba(249,246,240,.15);margin-top:.3rem;position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0;background:var(--hot);transform-origin:left;transform:scaleX(0)}
+
+.tags{display:flex;flex-wrap:wrap;gap:.45rem;margin:0;padding:0;list-style:none}
+.tags li{font-size:.9rem;padding:.35rem .8rem;border:1px solid var(--line);border-radius:999px;background:rgba(249,246,240,.6)}
+.num{font-size:.95rem;color:var(--ink-soft)}
+.num b{font-family:var(--f-mono);font-weight:500;color:var(--ink);direction:ltr;unicode-bidi:isolate;display:inline-block;user-select:all;margin-right:.5rem}
+
+.scrollhint{position:absolute;left:50%;bottom:clamp(1.2rem,4svh,2.4rem);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.6rem;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.24em;color:var(--wine);direction:ltr;transition:opacity .4s}
+.scrollhint i{width:1px;height:40px;background:linear-gradient(var(--wine),transparent);display:block;animation:drip 1.8s ease-in-out infinite;transform-origin:top}
+@keyframes drip{0%{transform:scaleY(0)}60%{transform:scaleY(1)}100%{transform:scaleY(1);opacity:0}}
+
+/* أقسام عادية تغطي المشهد عند صعودها */
+.solid-sec{position:relative;z-index:6}
+.steps{padding-block:clamp(4.5rem,9vw,8rem);background:var(--paper-2);border-top:1px solid var(--line);box-shadow:0 -30px 60px -40px rgba(43,16,21,.35)}
+.steps h2{font-size:clamp(2.1rem,4.6vw,4rem);margin-bottom:clamp(2.5rem,5vw,4.5rem)}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(1rem,3vw,2.5rem);list-style:none;margin:0;padding:0}
+.row3 li{position:relative;padding-top:1.4rem;display:flex;flex-direction:column;gap:.5rem;min-width:0}
+.row3 li::before{content:"";position:absolute;top:0;inset-inline:0;height:7px;background:repeating-linear-gradient(to bottom,var(--wine) 0 2px,transparent 2px 3.5px)}
+.row3 .n{font-family:var(--f-mono);font-size:.8rem;color:var(--wine);direction:ltr;text-align:right;letter-spacing:.12em}
+.row3 h3{font-size:clamp(1.3rem,2vw,1.7rem)}
+.row3 p{color:var(--ink-soft);font-size:.98rem}
+
+footer{background:var(--wine-deep);color:rgba(249,246,240,.75);padding-block:2.2rem calc(2.2rem + env(safe-area-inset-bottom,0px));font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem 2rem}
+footer img{height:34px;width:auto;border-radius:2px}
+footer .info{display:flex;flex-wrap:wrap;gap:.3rem 1.6rem}
+footer a{text-decoration:none;border-bottom:1px solid rgba(249,246,240,.3)}
+footer a:hover{color:#fff;border-color:#fff}
+
+.dock{position:fixed;inset-inline:0;bottom:0;z-index:55;padding:.7rem var(--gut-r) calc(.7rem + env(safe-area-inset-bottom,0px)) var(--gut-l);background:rgba(249,246,240,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);display:none;transform:translateY(110%);transition:transform .5s}
+.dock.on{transform:none}
+.dock .btn{width:100%}
+
+@media (max-width:760px){
+  body{font-size:16px}
+  .dock{display:block}
+  .nav .btn{display:none}
+  .row3{grid-template-columns:minmax(0,1fr);gap:2rem}
+  .st .pin{align-items:flex-end;padding-bottom:calc(88px + 2svh)}
+  .st .pin>.wrap{background:linear-gradient(to top,var(--bgcur) 62%,transparent);padding-top:3rem}
+  .say{max-width:100%;gap:.7rem}
+  .say h1{font-size:2.3rem}
+  .say h2{font-size:2rem}
+  .say p{font-size:1rem}
+  .hud{gap:.3rem 1.1rem}
+  .hud b{font-size:1rem}
+  .scrollhint{display:none}
+  #c4 .tags{display:none}
+  footer{padding-bottom:calc(2.2rem + 76px)}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+<div id="app" dir="rtl" lang="ar">
+
+<div id="intro" aria-hidden="true"><img src="img/logo.png" alt="" width="258" height="98"><span class="mono">SLICING MODEL…</span></div>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a href="#top" aria-label="بلاك بير"><img class="logo" src="img/logo.png" alt="بلاك بير" width="258" height="98"></a>
+    <a class="btn sm" data-wa href="https://wa.me/97470095666" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>اطلب الآن</a>
+  </div>
+  <div class="prog"><i id="prog"></i></div>
+</header>
+
+<main id="top">
+
+<!-- 00 · البطل: الدب كاملاً -->
+<section class="st on" id="c0" aria-label="المقدمة">
+  <div class="pin">
+    <div class="wrap">
+      <div class="say">
+        <div class="k fade">BLACK BEAR · 3D PRINTING · QATAR</div>
+        <h1><span class="ln"><span>من فكرةٍ على الشاشة</span></span><span class="ln"><span class="stripe">إلى قطعةٍ بين يديك</span></span></h1>
+        <p class="fade">مرّر للأسفل وشاهد كيف يتحوّل تصميمٌ رقمي إلى مجسّمٍ تمسكه بيدك، طبقةً بعد طبقة.</p>
+        <div class="actions fade"><a class="btn" data-wa href="https://wa.me/97470095666" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>ابدأ طلبك عبر واتساب</a></div>
+      </div>
+    </div>
+    <div class="scrollhint" id="hint"><i></i>SCROLL</div>
+  </div>
+</section>
+
+<!-- 02 · التقطيع إلى طبقات -->
+<section class="st" id="c2" aria-label="التقسيم إلى طبقات">
+  <div class="pin">
+    <div class="wrap">
+      <div class="say">
+        <div class="k fade">01 · SLICING</div>
+        <h2><span class="ln"><span>طبقةٌ</span></span><span class="ln"><span class="stripe">فوق طبقة</span></span></h2>
+        <p class="fade">يقسّم برنامج التقطيع المجسّم إلى مئات الطبقات، كل واحدةٍ بسماكة 0.2 ملم.</p>
+        <div class="hud fade">
+          <div><small>LAYERS</small><b id="hLayers">000</b></div>
+          <div><small>LAYER HEIGHT</small><b>0.20 mm</b></div>
+          <div><small>INFILL</small><b>20 %</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 · الطباعة -->
+<section class="st dark" id="c3" aria-label="الطباعة">
+  <div class="pin">
+    <div class="wrap">
+      <div class="say">
+        <div class="k fade">02 · PRINTING</div>
+        <h2><span class="ln"><span>خيطٌ واحد</span></span><span class="ln"><span class="stripe">يبني القطعة كلّها</span></span></h2>
+        <p class="fade">تذيب الفوهة الخيط عند 215 درجة وترسم كل طبقةٍ فوق التي قبلها، حتى يكتمل المجسّم.</p>
+        <div class="hud fade">
+          <div><small>LAYER</small><b id="pLayer">000 / 280</b></div>
+          <div><small>NOZZLE</small><b class="hot">215 °C</b></div>
+          <div><small>Z</small><b id="pZ">00.0 mm</b></div>
+          <div class="bar"><i id="pBar"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · جاهزة -->
+<section class="st" id="c4" aria-labelledby="cta-h">
+  <div class="pin">
+    <div class="wrap">
+      <div class="say">
+        <div class="k fade">03 · READY</div>
+        <h2 id="cta-h"><span class="ln"><span>قطعتك جاهزة</span></span><span class="ln"><span class="stripe">ماذا سنطبع لك؟</span></span></h2>
+        <ul class="tags fade"><li>دروع تذكارية</li><li>هدايا مخصّصة</li><li>شعارات بارزة</li><li>نماذج أولية</li><li>قطع غيار</li></ul>
+        <div class="actions fade"><a class="btn" data-wa href="https://wa.me/97470095666" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>ابدأ طلبك الآن</a></div>
+        <div class="num fade">أو اتصل بنا على<b>+974 7009 5666</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="steps solid-sec" aria-labelledby="steps-h">
+  <div class="wrap">
+    <h2 id="steps-h">ثلاثُ خطوات<br><span class="stripe">وتتسلّم قطعتك</span></h2>
+    <ol class="row3">
+      <li><span class="n">01</span><h3>أرسل فكرتك</h3><p>ملفاً جاهزاً أو صورةً أو وصفاً، ونتولّى التصميم.</p></li>
+      <li><span class="n">02</span><h3>اعتمد المعاينة والسعر</h3><p>لا نبدأ الطباعة قبل موافقتك.</p></li>
+      <li><span class="n">03</span><h3>نطبع ونسلّم</h3><p>استلامٌ مجاني من مقرّنا، أو توصيلٌ داخل قطر.</p></li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<footer class="solid-sec">
+  <div class="wrap">
+    <img src="img/logo.png" alt="بلاك بير" width="258" height="98" loading="lazy">
+    <div class="info">
+      <span>بركة العوامر، قطر</span>
+      <span class="mono">+974 7009 5666</span>
+      <span class="mono">info@blackbear.qa</span>
+      <span><a href="https://www.instagram.com/blackbear.qa/" target="_blank" rel="noopener">إنستغرام</a> · <a href="https://www.facebook.com/Blackbearqa/" target="_blank" rel="noopener">فيسبوك</a></span>
+    </div>
+    <span>© بلاك بير. جميع الحقوق محفوظة.</span>
+  </div>
+</footer>
+
+<div class="dock" id="dock"><a class="btn" data-wa href="https://wa.me/97470095666" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>ابدأ طلبك عبر واتساب</a></div>
+
+</div>
+
+<script>document.documentElement.classList.add('js');</script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ss=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SNAP=location.search.includes('snap');
+
+/* روابط واتساب برسالة جاهزة */
+const MSG='السلام عليكم، أرغب في طلب طباعة ثلاثية الأبعاد. فكرتي: ';
+$$('a[data-wa]').forEach(a=>a.href='https://wa.me/97470095666?text='+encodeURIComponent(MSG));
+
+/* ================= شكل الدب كدالة مسافة (SDF) ================= */
+const BASE=-0.8, TOP=1.06;
+function ell(x,y,z,cx,cy,cz,rx,ry,rz){const px=(x-cx)/rx,py=(y-cy)/ry,pz=(z-cz)/rz;const k0=Math.hypot(px,py,pz);const k1=Math.hypot(px/rx,py/ry,pz/rz);return k1===0?-Math.min(rx,ry,rz):k0*(k0-1)/k1}
+function sph(x,y,z,cx,cy,cz,r){return Math.hypot(x-cx,y-cy,z-cz)-r}
+function smin(a,b,k){const h=clamp(.5+.5*(b-a)/k,0,1);return lerp(b,a,h)-k*h*(1-h)}
+const P={
+  head:[0,0,0,1.0,.88,.82],
+  earL:[-.74,.72,-.08,.34], earR:[.74,.72,-.08,.34],
+  snout:[0,-.30,.58,.47,.33,.36],
+  nose:[0,-.17,.93,.17,.11,.10],
+  eyeL:[-.36,.13,.74,.095], eyeR:[.36,.13,.74,.095]
+};
+function sdf(x,y,z){
+  let d=ell(x,y,z,...P.head);
+  d=smin(d,sph(x,y,z,...P.earL),.1);
+  d=smin(d,sph(x,y,z,...P.earR),.1);
+  d=smin(d,ell(x,y,z,...P.snout),.12);
+  d=Math.min(d,ell(x,y,z,...P.nose));
+  d=Math.min(d,sph(x,y,z,...P.eyeL),sph(x,y,z,...P.eyeR));
+  return Math.max(d,BASE-y);
+}
+
+/* ===== تقطيع المجسّم: marching squares لكل طبقة ===== */
+const L=56, H=(TOP-BASE)/L;
+const GX0=-1.25,GZ0=-1.0,GS=.02,NX=126,NZ=110;
+const SEG={1:[[3,0]],2:[[0,1]],3:[[3,1]],4:[[1,2]],5:[[3,0],[1,2]],6:[[0,2]],7:[[3,2]],8:[[2,3]],9:[[0,2]],10:[[0,1],[2,3]],11:[[1,2]],12:[[1,3]],13:[[0,1]],14:[[3,0]]};
+function sliceLoops(y){
+  const v=new Float32Array((NX+1)*(NZ+1));
+  for(let i=0;i<=NX;i++)for(let j=0;j<=NZ;j++)v[i*(NZ+1)+j]=sdf(GX0+i*GS,y,GZ0+j*GS);
+  const V=(i,j)=>v[i*(NZ+1)+j];
+  const pts=new Map(), adj=new Map();
+  const ept=(key,i0,j0,i1,j1)=>{if(!pts.has(key)){const a=V(i0,j0),b=V(i1,j1),t=a/(a-b);pts.set(key,[GX0+lerp(i0,i1,t)*GS,GZ0+lerp(j0,j1,t)*GS])}return key};
+  const link=(a,b)=>{(adj.get(a)||adj.set(a,[]).get(a)).push(b);(adj.get(b)||adj.set(b,[]).get(b)).push(a)};
+  for(let i=0;i<NX;i++)for(let j=0;j<NZ;j++){
+    const c=(V(i,j)<0?1:0)|(V(i+1,j)<0?2:0)|(V(i+1,j+1)<0?4:0)|(V(i,j+1)<0?8:0);
+    const segs=SEG[c]; if(!segs) continue;
+    const E=[()=>ept('h'+i+'_'+j,i,j,i+1,j),()=>ept('v'+(i+1)+'_'+j,i+1,j,i+1,j+1),()=>ept('h'+i+'_'+(j+1),i,j+1,i+1,j+1),()=>ept('v'+i+'_'+j,i,j,i,j+1)];
+    for(const [a,b] of segs) link(E[a](),E[b]());
+  }
+  const seen=new Set(), loops=[];
+  for(const start of adj.keys()){
+    if(seen.has(start)) continue;
+    const loop=[]; let prev=null, cur=start;
+    while(cur && !seen.has(cur)){
+      seen.add(cur); loop.push(pts.get(cur));
+      const nb=adj.get(cur); const nx=nb[0]!==prev?nb[0]:nb[1]; prev=cur; cur=nx;
+    }
+    if(loop.length>4) loops.push(loop);
+  }
+  return loops;
+}
+
+/* ================= المشهد ================= */
+const canvas=$('#gl');
+let renderer;
+try{ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'}); }
+catch(e){ canvas.remove(); $('#intro').classList.add('out'); throw e; }
+renderer.setPixelRatio(Math.min(devicePixelRatio,innerWidth<760?1.5:2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.05;
+renderer.localClippingEnabled=true;
+const scene=new THREE.Scene();
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;
+const camera=new THREE.PerspectiveCamera(30,1,.1,60);
+const key=new THREE.DirectionalLight(0xfff1e6,2.2); key.position.set(-3,5,4); scene.add(key);
+const rim=new THREE.DirectionalLight(0xffc4a8,1.4); rim.position.set(4,2,-3); scene.add(rim);
+scene.add(new THREE.AmbientLight(0xffffff,.25));
+
+const bear=new THREE.Group(); scene.add(bear);
+const W=x=>bear.position.y+bear.scale.y*x; // ارتفاع محلي ← عالمي
+
+/* --- 1) نسخة التصميم (CAD): أجزاء ناعمة منفصلة --- */
+const planeCad=new THREE.Plane(new THREE.Vector3(0,-1,0),99);   // يُبقي ما تحت خط المسح
+const planeBase=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const matCad=new THREE.MeshPhysicalMaterial({color:0x701626,roughness:.3,clearcoat:.8,clearcoatRoughness:.18,clippingPlanes:[planeCad]});
+const matDark=new THREE.MeshPhysicalMaterial({color:0x2a0a10,roughness:.15,clearcoat:1,clippingPlanes:[planeCad]});
+const matWire=new THREE.MeshBasicMaterial({color:0xf6dfe2,wireframe:true,transparent:true,opacity:0,depthWrite:false,clippingPlanes:[planeCad]});
+const parts={};
+function part(name,def,mat,dir,isSphere){
+  const g=new THREE.Group();
+  const geo=new THREE.SphereGeometry(1,64,48), wgeo=new THREE.SphereGeometry(1,22,14);
+  const m=new THREE.Mesh(geo,mat), w=new THREE.Mesh(wgeo,matWire);
+  const s=isSphere?[def[3],def[3],def[3]]:[def[3],def[4],def[5]];
+  m.scale.set(...s); w.scale.set(s[0]*1.004,s[1]*1.004,s[2]*1.004);
+  g.add(m,w); g.position.set(def[0],def[1],def[2]);
+  g.userData={home:new THREE.Vector3(def[0],def[1],def[2]),dir:new THREE.Vector3(...dir),spin:(Math.random()-.5)*1.2};
+  bear.add(g); parts[name]=g; return g;
+}
+part('head',P.head,matCad,[0,-.05,-.55]);
+part('earL',P.earL,matCad,[-.85,.75,-.25],1);
+part('earR',P.earR,matCad,[.85,.75,-.25],1);
+part('snout',P.snout,matCad,[0,-.55,.85]);
+part('nose',P.nose,matDark,[.15,-.2,1.65]);
+part('eyeL',P.eyeL,matDark,[-.55,.35,1.3],1);
+part('eyeR',P.eyeR,matDark,[.55,.35,1.3],1);
+const cadParts=Object.values(parts);
+
+/* --- 2) نسخة الطباعة: 56 طبقة حقيقية مقطوعة من الشكل --- */
+const planeSlice=new THREE.Plane(new THREE.Vector3(0,1,0),99);  // يُبقي ما فوق خط المسح
+const layers=[];
+const lineMat=new THREE.LineBasicMaterial({color:0xff8a3d,toneMapped:false});
+function buildLayer(k){
+  const y0=BASE+k*H, loops=sliceLoops(y0+H*.5);
+  const shapes=loops.map(lp=>new THREE.Shape(lp.map(([x,z])=>new THREE.Vector2(x,-z))));
+  const bev=H*.2;
+  const geo=new THREE.ExtrudeGeometry(shapes,{depth:H-bev*2,bevelEnabled:true,bevelThickness:bev,bevelSize:bev*.9,bevelOffset:-bev*.9,bevelSegments:2,curveSegments:1});
+  geo.rotateX(-Math.PI/2); geo.translate(0,bev,0);
+  const mat=new THREE.MeshPhysicalMaterial({color:0x6c1424,roughness:.48,clearcoat:.3,clearcoatRoughness:.45,transparent:true,clippingPlanes:[planeSlice],emissive:0xff6a1a,emissiveIntensity:0});
+  const mesh=new THREE.Mesh(geo,mat);
+  const g=new THREE.Group(); g.position.y=y0; g.add(mesh); bear.add(g);
+  // مسار الفوهة: مقاطع الحواف فقط (بدون حركات التنقّل)
+  const segs=[], cum=[0]; let tot=0;
+  for(const lp of loops){ for(let i=0;i<lp.length;i++){ const a=lp[i], b=lp[(i+1)%lp.length]; segs.push(a[0],H,a[1],b[0],H,b[1]); tot+=Math.hypot(b[0]-a[0],b[1]-a[1]); cum.push(tot);} }
+  layers.push({g,mesh,mat,segs:new Float32Array(segs),cum,tot,y0});
+}
+
+/* سرير الطابعة والفوهة والقاعدة */
+function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t}
+const bedTex=canvasTex(512,512,(x,w,h)=>{x.fillStyle='#241417';x.fillRect(0,0,w,h);x.strokeStyle='rgba(255,220,200,.10)';x.lineWidth=1;for(let i=0;i<=w;i+=32){x.beginPath();x.moveTo(i+.5,0);x.lineTo(i+.5,h);x.stroke();x.beginPath();x.moveTo(0,i+.5);x.lineTo(w,i+.5);x.stroke()}x.strokeStyle='rgba(255,138,61,.5)';x.lineWidth=3;x.strokeRect(10,10,w-20,h-20);x.fillStyle='rgba(255,220,200,.35)';x.font='500 18px monospace';x.fillText('BLACK BEAR · BED 60°C',24,h-24)});
+const bedMat=new THREE.MeshStandardMaterial({map:bedTex,roughness:.35,metalness:.4,transparent:true,opacity:0});
+const bed=new THREE.Mesh(new THREE.BoxGeometry(3.2,.08,2.6),bedMat); bed.position.set(0,BASE-.04,.05); bear.add(bed);
+
+const metal=new THREE.MeshStandardMaterial({color:0xd8d8dc,metalness:1,roughness:.32,transparent:true});
+const brass=new THREE.MeshStandardMaterial({color:0xc9973e,metalness:1,roughness:.28,transparent:true});
+const black=new THREE.MeshStandardMaterial({color:0x1b1416,metalness:.3,roughness:.5,transparent:true});
+const hotGlow=new THREE.MeshBasicMaterial({color:0xff8a3d,transparent:true,toneMapped:false});
+const nozzle=new THREE.Group();
+{ const tip=new THREE.Mesh(new THREE.ConeGeometry(.07,.13,24),brass); tip.rotation.x=Math.PI; tip.position.y=.065;
+  const nut=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.06,6),brass); nut.position.y=.16;
+  const blk=new THREE.Mesh(new THREE.BoxGeometry(.32,.16,.24),metal); blk.position.set(.05,.27,0);
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.12,16),metal); tube.position.y=.41;
+  nozzle.add(tip,nut,blk,tube);
+  for(let i=0;i<7;i++){const f=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.018,32),metal);f.position.y=.48+i*.04;nozzle.add(f)}
+  const fan=new THREE.Mesh(new THREE.BoxGeometry(.36,.36,.08),black); fan.position.set(0,.6,.2); nozzle.add(fan);
+  const gl=new THREE.Mesh(new THREE.SphereGeometry(.03,12,8),hotGlow); nozzle.add(gl);
+  const rail=new THREE.Mesh(new THREE.BoxGeometry(4.2,.09,.12),black); rail.position.set(0,.6,-.12); rail.name='rail'; nozzle.add(rail);
+}
+nozzle.visible=false; bear.add(nozzle);
+const tracer=new THREE.LineSegments(new THREE.BufferGeometry(),lineMat); bear.add(tracer);
+let tracerLayer=-1;
+
+const pedMat=new THREE.MeshPhysicalMaterial({color:0xb9b4b2,metalness:.9,roughness:.34,transparent:true,opacity:0});
+const pedestal=new THREE.Group();
+{ const p1=new THREE.Mesh(new THREE.CylinderGeometry(.95,1.0,.3,72),pedMat); p1.position.y=-.15;
+  const acr=new THREE.Mesh(new THREE.CylinderGeometry(.9,.9,.05,72),new THREE.MeshPhysicalMaterial({color:0xf3eef0,roughness:.05,clearcoat:1,transparent:true,opacity:0}));
+  acr.position.y=.025; pedestal.add(p1,acr); pedestal.userData.acr=acr; }
+pedestal.position.y=BASE; bear.add(pedestal);
+
+const shadowTex=canvasTex(256,256,(x,w,h)=>{const g=x.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);g.addColorStop(0,'rgba(43,16,21,.55)');g.addColorStop(1,'rgba(43,16,21,0)');x.fillStyle=g;x.fillRect(0,0,w,h)});
+const shadow=new THREE.Mesh(new THREE.PlaneGeometry(3,2.4),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false}));
+shadow.rotation.x=-Math.PI/2; scene.add(shadow);
+
+const scanTex=canvasTex(256,256,(x,w,h)=>{const g=x.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);g.addColorStop(0,'rgba(255,170,110,1)');g.addColorStop(.45,'rgba(255,120,60,.45)');g.addColorStop(1,'rgba(255,120,60,0)');x.fillStyle=g;x.fillRect(0,0,w,h)});
+const scan=new THREE.Mesh(new THREE.PlaneGeometry(3.4,3.0),new THREE.MeshBasicMaterial({map:scanTex,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false,side:THREE.DoubleSide}));
+scan.rotation.x=-Math.PI/2; bear.add(scan);
+
+/* ================= التمرير ← زمن القصة G ================= */
+const chapters=$$('.st');
+let bounds=[], chap=0;
+const STAGE=[0,2,3,4]; // المقدمة ← الطبقات ← الطباعة ← جاهزة
+function measure(){
+  const vh=innerHeight;
+  bounds=chapters.map(el=>{const top=el.getBoundingClientRect().top+scrollY;return {s:top,e:top+el.offsetHeight-vh}});
+}
+function storyG(){
+  const y=scrollY;
+  const S=STAGE, n=bounds.length;
+  if(y<=bounds[0].s){ chap=0; return 0; }
+  for(let i=0;i<n;i++){
+    const b=bounds[i], nb=bounds[i+1];
+    if(y<=b.e){ chap=i; return S[i]+.8*clamp((y-b.s)/Math.max(1,b.e-b.s),0,1); }
+    if(nb && y<nb.s){ const f=clamp((y-b.e)/Math.max(1,nb.s-b.e),0,1); chap=f<.5?i:i+1; return lerp(S[i]+.8,S[i+1],f); }
+  }
+  chap=n-1; return S[n-1]+.8+.2*clamp((y-bounds[n-1].e)/innerHeight,0,1);
+}
+
+/* مسار الدب عبر الفصول: [G, x, y, دوران, حجم] */
+const POSE=[[0,-1.25,.02,-.5,1],[.8,-1.25,.02,-.05,1],[2,-1.05,-.08,.25,1],[2.8,-1.05,-.08,1.35,1],[3,-1.05,-.3,.45,1],[3.8,-1.05,-.3,.75,1],[4,-1.2,-.02,-.55,1.04],[4.8,-1.2,-.02,.15,1.04],[5,-1.2,.6,.3,1.04]];
+const POSE_M=[[0,0,.95,-.5,.78],[.8,0,.95,-.05,.78],[2,0,.85,.25,.72],[2.8,0,.85,1.35,.72],[3,0,.7,.45,.72],[3.8,0,.7,.75,.72],[4,0,.95,-.55,.74],[4.8,0,.95,.15,.74],[5,0,1.6,.3,.74]];
+const BG=[[0,'#F9F6F0'],[.8,'#F9F6F0'],[2,'#F9F6F0'],[2.8,'#F9F6F0'],[3,'#160A0D'],[3.8,'#160A0D'],[4,'#F9F6F0']];
+function keyed(K,G){
+  if(G<=K[0][0]) return K[0].slice(1);
+  for(let i=0;i<K.length-1;i++){ if(G<=K[i+1][0]){ const t=ss(K[i][0],K[i+1][0],G); return K[i].slice(1).map((v,j)=>lerp(v,K[i+1][j+1],t)); } }
+  return K[K.length-1].slice(1);
+}
+const cA=new THREE.Color(), cB=new THREE.Color();
+function bgAt(G){
+  if(G<=BG[0][0]) return BG[0][1];
+  for(let i=0;i<BG.length-1;i++){ if(G<=BG[i+1][0]){ cA.set(BG[i][1]); cB.set(BG[i+1][1]); return '#'+cA.lerp(cB,ss(BG[i][0],BG[i+1][0],G)).getHexString(); } }
+  return BG[BG.length-1][1];
+}
+
+/* ================= الرسم لكل إطار ================= */
+let mobile=false, targetG=0, G=0, mx=0, my=0, smx=0, smy=0;
+const nav=$('#nav'), dock=$('#dock'), hint=$('#hint'), prog=$('#prog');
+const hLayers=$('#hLayers'), pLayer=$('#pLayer'), pZ=$('#pZ'), pBar=$('#pBar');
+const v3=new THREE.Vector3(), v3b=new THREE.Vector3();
+let lastBg='', lastOn=-1;
+
+function resize(){
+  const w=innerWidth,h=innerHeight; mobile=w<760;
+  renderer.setSize(w,h,false); camera.aspect=w/h;
+  const dist=mobile?10.5:(w/h<1.25?8.6:7.2);
+  camera.position.set(0,.85,dist); camera.lookAt(0,.05,0); camera.updateProjectionMatrix();
+  measure();
+}
+
+function frame(t){
+  t*=.001;
+  targetG=storyG();
+  G=(reduce||SNAP)?targetG:G+(targetG-G)*.12;
+  if(Math.abs(targetG-G)<.0004) G=targetG;
+  smx+=(mx-smx)*.05; smy+=(my-smy)*.05;
+
+  const [px,py,ry,sc]=keyed(mobile?POSE_M:POSE,G);
+  const idle=reduce?0:(1-ss(.6,1,G)+ss(3.9,4.2,G))*Math.sin(t*1.2)*.035;
+  bear.position.set(px,py+idle,0);
+  bear.rotation.set(smy*.12,ry+smx*.25+(reduce?0:Math.sin(t*.5)*.06),0);
+  bear.scale.setScalar(sc*(1-.16*ss(2.15,2.45,G)*(1-ss(2.6,2.8,G))));
+  bear.updateMatrixWorld();
+
+  /* 1 · التفكيك */
+  const ex=0;
+  for(const g of cadParts){
+    const u=g.userData;
+    g.position.copy(u.home).addScaledVector(u.dir,ex*.62);
+    g.rotation.set(ex*u.spin*.5,ex*u.spin,ex*u.spin*.3);
+  }
+  matWire.opacity=ex*.32;
+
+  /* 2 · المسح والتقطيع */
+  const scanK=ss(1.35,2.0,G);
+  const scanY=lerp(TOP+.02,BASE-.02,scanK);
+  const cadOn=G<2.02, sliceVisible=G>1.34;
+  planeCad.constant=scanK<=0?99:W(scanY);
+  planeSlice.constant=scanK<=0?99:(scanK>=1?99:-W(scanY));
+  planeBase.constant=-W(BASE);
+  for(const g of cadParts) g.visible=cadOn;
+  scan.visible=scanK>0&&scanK<1; scan.position.y=scanY; scan.material.opacity=Math.sin(Math.PI*scanK);
+
+  const sp=ss(2.15,2.45,G)*(1-ss(2.6,2.8,G));
+  const dv=ss(2.8,2.95,G);
+  const printing=G>=2.95;
+  const lf=L*clamp((G-3.0)/.76,0,1);
+  const done=Math.floor(lf);
+  for(let k=0;k<L;k++){
+    const Ly=layers[k], ph=k/L;
+    let vis=sliceVisible, op=1;
+    if(!printing){ const cut=(1-dv)*L; vis=vis&&k<cut+.999; op=clamp(cut-k,0,1); }
+    else { vis=k<done; }
+    Ly.g.visible=vis&&op>0.01;
+    Ly.mat.opacity=op; Ly.mat.transparent=op<1; Ly.mat.depthWrite=op>=1;
+    Ly.g.position.y=Ly.y0+(k-L*.5)*.02*sp;
+    Ly.g.rotation.y=sp*(ph-.5)*1.4;
+    Ly.g.position.x=sp*Math.sin(k*.45+t*1.4)*.05;
+    Ly.mat.emissiveIntensity=printing&&G<3.95?clamp(1-(lf-k-1)/2.5,0,1)*1.1:0;
+  }
+  if(hLayers) hLayers.textContent=String(Math.round(280*ss(1.88,2.4,G))).padStart(3,'0');
+
+  /* 3 · الطباعة: الفوهة ترسم حواف الطبقة الحالية */
+  const bedK=ss(2.75,2.95,G)*(1-ss(3.85,4.05,G));
+  bedMat.opacity=bedK; bed.visible=bedK>.01;
+  const nozK=ss(2.85,3.0,G)*(1-ss(3.8,3.97,G));
+  nozzle.visible=nozK>.01;
+  tracer.visible=false;
+  if(nozzle.visible){
+    for(const m of [metal,brass,black,hotGlow]) m.opacity=nozK;
+    let nx=0,nz=0,ny=BASE+.002;
+    if(done<L && G>=3.0){
+      const Ly=layers[done], frac=lf-done;
+      if(tracerLayer!==done){ tracer.geometry.setAttribute('position',new THREE.BufferAttribute(Ly.segs,3)); tracerLayer=done; }
+      tracer.position.y=Ly.y0-H*.15;
+      const target=frac*Ly.tot; let i=0; while(i<Ly.cum.length-2&&Ly.cum[i+1]<target) i++;
+      const segT=Ly.cum[i+1]>Ly.cum[i]?(target-Ly.cum[i])/(Ly.cum[i+1]-Ly.cum[i]):0, s=Ly.segs;
+      nx=lerp(s[i*6],s[i*6+3],segT); nz=lerp(s[i*6+2],s[i*6+5],segT); ny=Ly.y0+H;
+      tracer.geometry.setDrawRange(0,(i+1)*2); tracer.visible=true;
+    } else if(done>=L){ ny=TOP+.02; }
+    const lift=(1-ss(2.85,3.0,G))*1.6+ss(3.78,3.97,G)*1.8;
+    nozzle.position.set(nx,ny+lift,nz);
+    nozzle.getObjectByName('rail').position.x=-nx;
+  }
+  const pct=lf/L;
+  if(pLayer){ pLayer.textContent=String(Math.round(pct*280)).padStart(3,'0')+' / 280'; pZ.textContent=(pct*56).toFixed(1).padStart(4,'0')+' mm'; pBar.style.transform='scaleX('+pct.toFixed(4)+')'; }
+
+  /* 4 · القاعدة */
+  const pk=ss(3.9,4.2,G);
+  pedMat.opacity=pk; pedestal.userData.acr.material.opacity=pk*.5;
+  pedestal.visible=pk>.01; pedestal.position.y=BASE-.5*(1-pk);
+
+  /* الظل */
+  shadow.position.set(bear.position.x,W(BASE)-.01-(1-bedK)*.02,0);
+  shadow.scale.setScalar(bear.scale.x*(1+ (1-ss(.6,1,G))*.15));
+  shadow.material.opacity=(1-bedK)*(1-pk*.6)*(G>4.85?1-ss(4.85,5,G):1);
+  shadow.visible=!mobile||G<4.9;
+
+  renderer.render(scene,camera);
+
+  /* الواجهة */
+  const bg=bgAt(G);
+  if(bg!==lastBg){ lastBg=bg; document.body.style.background=bg; document.documentElement.style.setProperty('--bgcur',bg); }
+  const on=chap;
+  if(on!==lastOn){ lastOn=on; chapters.forEach((c,i)=>c.classList.toggle('on',i===on)); }
+  hint.style.opacity=1-ss(0,.12,G);
+  nav.classList.toggle('solid',scrollY>10);
+  dock.classList.toggle('on',scrollY>innerHeight*.6);
+  prog.style.width=(clamp(G/4.8,0,1)*100)+'%';
+  canvas.style.visibility=G>4.99?'hidden':'visible';
+
+  requestAnimationFrame(frame);
+}
+
+addEventListener('resize',resize);
+addEventListener('pointermove',e=>{mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1},{passive:true});
+document.fonts&&document.fonts.ready.then(measure);
+
+/* بناء الطبقات ثم الإقلاع */
+requestAnimationFrame(()=>setTimeout(()=>{
+  for(let k=0;k<L;k++) buildLayer(k);
+  resize(); G=targetG=storyG();
+  requestAnimationFrame(frame);
+  $('#intro').classList.add('out');
+  setTimeout(()=>$('#intro')?.remove(),900);
+},30));
+</script>
+</body>
+</html>
